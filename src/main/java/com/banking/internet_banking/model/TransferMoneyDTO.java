@@ -2,13 +2,13 @@ package com.banking.internet_banking.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class TransferMoney {
+public class TransferMoneyDTO {
     @JsonProperty("userId")
     private final String userId;
     @JsonProperty("amount")
     private final String amount;
 
-    public TransferMoney(String userId, String amount) {
+    public TransferMoneyDTO(String userId, String amount) {
         this.userId = userId;
         this.amount = amount;
     }
