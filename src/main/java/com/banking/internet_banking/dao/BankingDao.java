@@ -12,7 +12,7 @@ public interface BankingDao {
 
     void changeBalance(UUID userId, double newBalance);
 
-    void addOperation(UUID operationId, UUID userId, LocalDateTime operationDate, int operationType, int operationAmount);
+    void addOperation(UUID operationId, UUID userId, LocalDateTime operationDate, int operationType, int operationAmount, UUID referenceId );
 
     List<OperationListResponseDTO> getOperations(UUID userId, LocalDateTime fromDate, LocalDateTime tillDate);
 }

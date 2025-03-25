@@ -64,6 +64,28 @@ Error:
     "message": "Incorrect result size: expected 1, actual 0"
 }
 ```
+### Transfer Money
+```json
+POST http://localhost:8080/transferMoney
+Request:
+{
+    "currentUserId": "38fabb96-0fc0-4ce8-b2bb-c6c90e957063",
+    "destinationUserId": "358b7b44-7671-41fc-9679-20f4650d51ce",
+    "amount": "1011"
+}
+
+Response:
+{
+    "result": "1",
+    "message": "Ok"
+}
+
+Error:
+{
+    "result": "0",
+    "message": "Incorrect result size: expected 1, actual 0"
+}
+```
 ### Operations list
 ```json
 GET http://localhost:8080/getOperationList?userId=38fabb96-0fc0-4ce8-b2bb-c6c90e957063&fromDate=2025-03-12T00:00:00&tillDate=2025-03-13T00:00:00

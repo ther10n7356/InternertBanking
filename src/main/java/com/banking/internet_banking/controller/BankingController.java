@@ -4,7 +4,8 @@ import com.banking.internet_banking.dao.BankingDao;
 import com.banking.internet_banking.enums.OperationTypes;
 import com.banking.internet_banking.model.OperationListResponseDTO;
 import com.banking.internet_banking.model.ResultMessageDto;
-import com.banking.internet_banking.model.TransferMoneyDTO;
+import com.banking.internet_banking.model.MoneyRequestDTO;
+import com.banking.internet_banking.model.TransferMoneyRequestDTO;
 import com.sun.jdi.InternalException;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
@@ -32,33 +33,34 @@ public class BankingController {
 
 
     public ResultMessageDto getBalance(String userId) {
-        try {
-            return new ResultMessageDto(bankingDao.getBalance(UUID.fromString(userId)).toString());
-        } catch (Exception e) {
-            return new ResultMessageDto("-1", e.getMessage());
-        }
+        return new ResultMessageDto(bankingDao.getBalance(UUID.fromString(userId)).toString());
     }
 
     @Transactional
-    public ResultMessageDto takeMoney(TransferMoneyDTO transferMoney) {
-        try {
-            changeAmount(transferMoney, OperationTypes.TAKE);
-            addOperation(transferMoney, OperationTypes.TAKE);
-            return new ResultMessageDto("1");
-        } catch (Exception e) {
-            return new ResultMessageDto("0", e.getMessage());
-        }
+    public ResultMessageDto processMoney(MoneyRequestDTO moneyRequest, OperationTypes operationType) {
+
+        processOperation(moneyRequest, operationType);
+        return new ResultMessageDto("1");
     }
 
     @Transactional
-    public ResultMessageDto putMoney(TransferMoneyDTO transferMoney) {
-        try {
-            changeAmount(transferMoney, OperationTypes.PUT);
-            addOperation(transferMoney, OperationTypes.PUT);
-            return new ResultMessageDto("1");
-        } catch (Exception e) {
-            return new ResultMessageDto("0", e.getMessage());
-        }
+    public ResultMessageDto transferMoney(TransferMoneyRequestDTO transferMoneyRequest) {
+        UUID referenceId = UUID.randomUUID();
+        processOperation(
+                new MoneyRequestDTO(
+                        transferMoneyRequest.getCurrentUserId(),
+                        transferMoneyRequest.getTransferAmount()
+                ),
+                OperationTypes.TRANSFER_TO,
+                referenceId);
+        processOperation(
+                new MoneyRequestDTO(
+                        transferMoneyRequest.getDestinationUserId(),
+                        transferMoneyRequest.getTransferAmount()
+                ),
+                OperationTypes.TRANSFER_FROM,
+                referenceId);
+        return new ResultMessageDto("1"); 
     }
 
     public List<OperationListResponseDTO> getOperations(String userId, String fromDate, String tillDate) {
@@ -80,25 +82,34 @@ public class BankingController {
         return bankingDao.getOperations(UUID.fromString(userId), dateFrom, dateTill);
     }
 
+    private void processOperation(MoneyRequestDTO moneyRequest, OperationTypes operationType) {
+        processOperation(moneyRequest, operationType, null);
+    }
+
+    private void processOperation(MoneyRequestDTO moneyRequest, OperationTypes operationType, UUID referenceID) {
+        changeAmount(moneyRequest, operationType);
+        addOperation(moneyRequest, operationType, referenceID);
+    }
+
     private LocalDateTime toLocalDate(String dateValue) throws ParseException {
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
         return LocalDateTime.ofInstant(format.parse(dateValue).toInstant(), ZoneId.systemDefault());
     }
 
-    private void changeAmount(TransferMoneyDTO transferMoney, OperationTypes type) {
+    private void changeAmount(MoneyRequestDTO transferMoney, OperationTypes type) {
         int currentBalance = bankingDao.getBalance(UUID.fromString(transferMoney.getUserId()));
         int transferAmount = Integer.parseInt(transferMoney.getAmount());
 
         int newBalance;
 
         switch (type) {
-            case TAKE -> {
+            case TAKE, TRANSFER_TO -> {
                 if (currentBalance < transferAmount) {
                     throw new InternalException("Сумма перевода больше баланса");
                 }
                 newBalance = currentBalance - transferAmount;
             }
-            case PUT -> {
+            case PUT, TRANSFER_FROM -> {
                 newBalance = currentBalance + transferAmount;
             }
             default -> throw new UnsupportedOperationException("Неизвестный тип операции");
@@ -107,13 +118,14 @@ public class BankingController {
         bankingDao.changeBalance(UUID.fromString(transferMoney.getUserId()), newBalance);
     }
 
-    private void addOperation(TransferMoneyDTO transferMoneyDTO, OperationTypes operType) {
+    private void addOperation(MoneyRequestDTO transferMoneyDTO, OperationTypes operType, UUID referenceId) {
         bankingDao.addOperation(
                 UUID.randomUUID(),
                 UUID.fromString(transferMoneyDTO.getUserId()),
                 LocalDateTime.now(),
                 operType.getOperTypeIndex(),
-                Integer.parseInt(transferMoneyDTO.getAmount())
+                Integer.parseInt(transferMoneyDTO.getAmount()),
+                referenceId
         );
     }
 }

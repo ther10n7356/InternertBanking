@@ -43,7 +43,7 @@ public class BankingDaoImpl implements BankingDao {
     }
 
     @Override
-    public void addOperation(UUID operationId, UUID userId, LocalDateTime operationDate, int operationType, int operationAmount) {
+    public void addOperation(UUID operationId, UUID userId, LocalDateTime operationDate, int operationType, int operationAmount, UUID referenceId) {
         jdbcTemplate.update(
                 "insert\n" +
                         "\tinto\n" +
@@ -51,18 +51,21 @@ public class BankingDaoImpl implements BankingDao {
                         "\tuser_id,\n" +
                         "\toper_date,\n" +
                         "\toper_type,\n" +
-                        "\toper_amount)\n" +
+                        "\toper_amount,\n" +
+                        "\treference_uid)\n" +
                         "values (:oper_id,\n" +
                         ":user_id,\n" +
                         ":oper_date,\n" +
                         ":oper_type,\n" +
-                        ":oper_amount)",
+                        ":oper_amount,\n" +
+                        ":reference_uid)",
                 Map.of(
                         "oper_id", operationId,
                         "user_id", userId,
                         "oper_date", operationDate,
                         "oper_type", operationType,
-                        "oper_amount", operationAmount
+                        "oper_amount", operationAmount,
+                        "reference_uid", referenceId
                 )
         );
     }
